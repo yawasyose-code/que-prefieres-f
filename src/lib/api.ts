@@ -1,7 +1,7 @@
 import { getUserId } from "@/lib/user-id"
 import type { HistoryItem, QuestionResponse, VoteChoice } from "@/lib/types"
 
-const API_BASE = "/api/v1"
+const API_BASE = import.meta.env.VITE_API_BASE ?? "/api/v1"
 
 export class ApiError extends Error {
   status: number
