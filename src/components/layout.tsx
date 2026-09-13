@@ -1,11 +1,24 @@
 import { Link } from "react-router-dom"
 import { History, Play } from "lucide-react"
 
-export function AppLayout({ children }: { children: React.ReactNode }) {
+import { cn } from "@/lib/utils"
+
+export function AppLayout({
+  children,
+  fullBleed = false,
+}: {
+  children: React.ReactNode
+  fullBleed?: boolean
+}) {
   return (
-    <div className="flex min-h-svh flex-col bg-background">
-      <header className="sticky top-0 z-10 border-b border-border/50 bg-background/80 backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4">
+    <div
+      className={cn(
+        "flex flex-col bg-background",
+        fullBleed ? "h-svh overflow-hidden" : "min-h-svh"
+      )}
+    >
+      <header className="sticky top-0 z-20 shrink-0 border-b border-border/50 bg-background/80 backdrop-blur">
+        <div className="mx-auto flex h-12 w-full max-w-7xl items-center justify-between px-4 sm:h-14">
           <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
             <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
               ¿
@@ -30,7 +43,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
       </header>
-      <main className="mx-auto flex h-full w-full max-w-7xl flex-1 flex-col px-4 py-6">{children}</main>
+      <main
+        className={cn(
+          "mx-auto flex w-full max-w-7xl flex-1 flex-col",
+          fullBleed ? "min-h-0 overflow-hidden" : "px-4 py-6"
+        )}
+      >
+        {children}
+      </main>
     </div>
   )
 }

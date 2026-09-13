@@ -1,11 +1,24 @@
-import { Check, Crown, Image as ImageIcon } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Check, Crown } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Progress, ProgressIndicator, ProgressTrack } from "@/components/ui/progress"
+import { useCountUp } from "@/lib/use-count-up"
+import { ChoiceBadge, DuelMedia } from "@/components/duel-panel"
+import { choiceAccent } from "@/lib/choice-accent"
 import type { QuestionResponse, VoteChoice } from "@/lib/types"
 
+/**
+ * Resultado del duelo: dos paneles a pantalla dividida.
+ * IMPORTANTE: debe renderizarse como hijo directo de un grid
+ * `grid-rows-2 md:grid-cols-2` (los paneles se reparten el espacio).
+ */
 export function ResultView({ question }: { question: QuestionResponse }) {
-  const choice: VoteChoice | null = question.user_choice
+  const winner: VoteChoice | null =
+    question.percentage_a === question.percentage_b
+      ? null
+      : question.percentage_a > question.percentage_b
+        ? "A"
+        : "B"
 
   const rows: {
     choice: VoteChoice
@@ -30,100 +43,123 @@ export function ResultView({ question }: { question: QuestionResponse }) {
     },
   ]
 
-  const winner: VoteChoice | null =
-    question.percentage_a === question.percentage_b
-      ? null
-      : question.percentage_a > question.percentage_b
-        ? "A"
-        : "B"
+  return (
+    <>
+      {rows.map((row) => (
+        <ResultPanel
+          key={row.choice}
+          row={row}
+          isSelected={question.user_choice === row.choice}
+          isWinner={winner === row.choice}
+          isDimmed={winner !== null && winner !== row.choice}
+        />
+      ))}
+    </>
+  )
+}
+
+function ResultPanel({
+  row,
+  isSelected,
+  isWinner,
+  isDimmed,
+}: {
+  row: {
+    choice: VoteChoice
+    option: string
+    votes: number
+    percentage: number
+    image?: string | null
+  }
+  isSelected: boolean
+  isWinner: boolean
+  isDimmed: boolean
+}) {
+  const accent = choiceAccent(row.choice)
+  const percentage = useCountUp(row.percentage)
+  const [barReady, setBarReady] = useState(false)
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setBarReady(true))
+    return () => cancelAnimationFrame(frame)
+  }, [])
 
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6">
-      {rows.map((row) => {
-        const isA = row.choice === "A"
-        const isWinner = winner === row.choice
-        const isSelected = choice === row.choice
-        return (
-          <div
-            key={row.choice}
+    <div className="relative min-h-0 overflow-hidden">
+      <DuelMedia
+        image={row.image}
+        alt={row.option}
+        choice={row.choice}
+        className={cn(
+          "transition-all duration-700",
+          isDimmed && "opacity-50 saturate-50"
+        )}
+      />
+
+      {/* Marco del ganador */}
+      {isWinner && (
+        <div
+          className={cn(
+            "pointer-events-none absolute inset-0 z-10 border-4",
+            accent.isA ? "border-sky-400/70" : "border-rose-400/70"
+          )}
+        />
+      )}
+
+      {/* Badge de opción */}
+      <ChoiceBadge
+        choice={row.choice}
+        className="absolute top-4 left-4 z-10 animate-in fade-in zoom-in-50 duration-300"
+      >
+        {isWinner && <Crown className="size-4 fill-yellow-300 text-yellow-300 sm:size-5" />}
+      </ChoiceBadge>
+
+      {/* Badge "TÚ" */}
+      {isSelected && (
+        <span className="absolute top-4 right-4 z-10 flex animate-in items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-1 text-xs font-bold text-white shadow-lg zoom-in-50 fade-in duration-300 [animation-delay:200ms]">
+          <Check className="size-3.5" />
+          TÚ
+        </span>
+      )}
+
+      {/* Overlay de resultados */}
+      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 bg-gradient-to-t from-black/85 via-black/50 to-transparent p-4 pt-16 sm:p-6 sm:pt-20 md:p-8 md:pt-24">
+        <span
+          className={cn(
+            "text-xs font-bold tracking-widest uppercase",
+            accent.textSoft
+          )}
+        >
+          Opción {row.choice}
+        </span>
+        <span className="line-clamp-2 text-lg leading-tight font-bold text-balance text-white sm:text-xl md:text-2xl">
+          {row.option}
+        </span>
+        <div className="mt-1 flex items-end justify-between gap-3">
+          <span
             className={cn(
-              "relative flex w-full flex-col overflow-hidden rounded-2xl border bg-card transition-all duration-200",
-              isA
-                ? "border-sky-500/25"
-                : "border-rose-500/25",
-              isWinner &&
-                (isA
-                  ? "border-sky-500/70 shadow-[0_8px_40px_-12px_rgba(56,189,248,0.4)]"
-                  : "border-rose-500/70 shadow-[0_8px_40px_-12px_rgba(244,63,94,0.4)]"),
-              !isWinner && "opacity-80"
+              "text-5xl leading-none font-black tabular-nums sm:text-6xl md:text-7xl",
+              accent.textSoft
             )}
           >
-            {isSelected && (
-              <span className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-[0.65rem] font-bold text-white shadow-lg">
-                <Check className="size-3" />
-                TÚ
-              </span>
-            )}
+            {percentage}%
+          </span>
+          <span className="pb-1 text-xs font-medium text-white/70 tabular-nums sm:text-sm">
+            {row.votes.toLocaleString()} votos
+          </span>
+        </div>
+      </div>
 
-            <div className="relative h-24 w-full shrink-0 overflow-hidden sm:h-36 md:h-56 lg:h-100">
-              {row.image ? (
-                <img
-                  src={row.image}
-                  alt={row.option}
-                  loading="lazy"
-                  className="size-full object-cover"
-                />
-              ) : (
-                <div
-                  className={cn(
-                    "flex size-full items-center justify-center",
-                    isA
-                      ? "bg-gradient-to-br from-sky-500/25 via-sky-500/10 to-transparent"
-                      : "bg-gradient-to-br from-rose-500/25 via-rose-500/10 to-transparent"
-                  )}
-                >
-                  <ImageIcon className="size-8 text-muted-foreground/40 sm:size-10" />
-                </div>
-              )}
-              <span
-                className={cn(
-                  "absolute top-3 left-3 flex size-7 items-center justify-center gap-1 rounded-lg text-sm font-extrabold text-white shadow-lg sm:size-11 sm:text-lg",
-                  isA ? "bg-sky-500" : "bg-rose-500"
-                )}
-              >
-                {row.choice}
-                {isWinner && <Crown className="size-3.5 text-yellow-300" />}
-              </span>
-            </div>
-
-            <div className="flex flex-1 flex-col gap-3 p-4 sm:p-5">
-              <div className="flex items-center justify-between gap-3">
-                <span className="line-clamp-2 text-sm leading-snug font-semibold text-balance md:text-lg">
-                  {row.option}
-                </span>
-                <span
-                  className={cn(
-                    "shrink-0 text-xl font-extrabold tabular-nums sm:text-2xl",
-                    isA ? "text-sky-400" : "text-rose-400"
-                  )}
-                >
-                  {row.percentage}%
-                </span>
-              </div>
-              <Progress value={row.percentage}>
-                <ProgressTrack className="h-2.5">
-                  <ProgressIndicator
-                    className={isA ? "bg-sky-500" : "bg-rose-500"}
-                  />
-                </ProgressTrack>
-              </Progress>
-              <p className="text-xs text-muted-foreground tabular-nums">
-                {row.votes.toLocaleString()} votos
-              </p>
-            </div>
-          </div>
-        )
-      })}
+      {/* Barra de progreso en el borde inferior */}
+      <div className="absolute inset-x-0 bottom-0 h-1.5 bg-white/15">
+        <div
+          className={cn(
+            "h-full transition-[width] duration-1000 ease-out",
+            accent.bar
+          )}
+          style={{ width: barReady ? `${row.percentage}%` : "0%" }}
+        />
+      </div>
     </div>
   )
 }

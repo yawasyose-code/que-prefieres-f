@@ -3,7 +3,6 @@ import { Link } from "react-router-dom"
 import {
   ArrowRight,
   History,
-  Image as ImageIcon,
   Loader2,
   RefreshCw,
   Trophy,
@@ -11,8 +10,10 @@ import {
 
 import { AppLayout } from "@/components/layout"
 import { ResultView } from "@/components/result-view"
+import { ChoiceBadge, DuelMedia } from "@/components/duel-panel"
+import { choiceAccent } from "@/lib/choice-accent"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   isConflict,
@@ -92,98 +93,61 @@ export function HomeView() {
   }
 
   return (
-    <AppLayout>
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-7xl flex-1 flex-col">
-        {view.kind === "loading" && (
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
-            <Card className="max-h-full w-full border-border/50 shadow-lg">
-              <CardContent className="flex flex-col gap-3 p-4 sm:p-6">
-                <Skeleton className="mx-auto h-5 w-1/3" />
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
-                  <Skeleton className="h-24 w-full sm:h-36 md:h-56 lg:h-100" />
-                  <Skeleton className="h-24 w-full sm:h-36 md:h-56 lg:h-100" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+    <AppLayout fullBleed>
+      <div className="flex min-h-0 flex-1 flex-col">
+        {view.kind === "loading" && <DuelSkeleton />}
 
         {view.kind === "ready" && (
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
-            <Card className="max-h-full w-full border-border/50 shadow-lg">
-              <CardHeader className="py-3 text-center sm:py-4">
-                <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-                  ¿Qué prefieres?
-                </p>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 sm:px-6">
-                <div className="relative">
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-6">
-                    <ChoiceCard
-                      choice="A"
-                      text={view.question.option_a}
-                      image={view.question.image_url_a}
-                      disabled={voteMutation.isPending}
-                      onClick={() => handleVote("A")}
-                    />
-                    <div className="flex items-center justify-center gap-3 text-xs font-semibold text-muted-foreground md:hidden">
-                      <span className="h-px flex-1 bg-border" />
-                      O
-                      <span className="h-px flex-1 bg-border" />
-                    </div>
-                    <ChoiceCard
-                      choice="B"
-                      text={view.question.option_b}
-                      image={view.question.image_url_b}
-                      disabled={voteMutation.isPending}
-                      onClick={() => handleVote("B")}
-                    />
-                  </div>
-                  <span className="pointer-events-none absolute top-1/2 left-1/2 z-10 hidden size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-sm font-extrabold tracking-wide text-foreground shadow-xl md:flex">
-                    VS
-                  </span>
+          <DuelStage key={view.question.id}>
+            <ChoicePanel
+              choice="A"
+              text={view.question.option_a}
+              image={view.question.image_url_a}
+              disabled={voteMutation.isPending}
+              onClick={() => handleVote("A")}
+            />
+            <ChoicePanel
+              choice="B"
+              text={view.question.option_b}
+              image={view.question.image_url_b}
+              disabled={voteMutation.isPending}
+              onClick={() => handleVote("B")}
+            />
+            <VsBadge />
+            {voteMutation.isPending && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/30 backdrop-blur-[2px]">
+                <div className="flex items-center gap-2 rounded-full bg-background px-4 py-2 text-sm font-medium shadow-xl">
+                  <Loader2 className="size-4 animate-spin" />
+                  Registrando tu voto…
                 </div>
-              </CardContent>
-              {voteMutation.isPending && (
-                <CardFooter className="justify-center py-3 text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" /> Registrando tu
-                  voto…
-                </CardFooter>
-              )}
-            </Card>
-          </div>
+              </div>
+            )}
+          </DuelStage>
         )}
 
         {view.kind === "voted" && (
-          <Card className="max-h-full w-full border-border/50 shadow-lg">
-            <CardHeader className="flex flex-col items-center gap-1 py-3 text-center sm:py-4">
-              <p className="text-xs font-medium tracking-widest text-muted-foreground uppercase">
-                Resultado
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {view.question.total_votes.toLocaleString()} votos en total
-              </p>
-            </CardHeader>
-            <CardContent className="px-4 pb-4 sm:px-6">
-              <div className="relative">
-                <ResultView question={view.question} />
-                <span className="pointer-events-none absolute top-1/2 left-1/2 z-10 hidden size-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-sm font-extrabold tracking-wide text-foreground shadow-xl md:flex">
-                  VS
-                </span>
-              </div>
-            </CardContent>
-            <CardFooter className="justify-center py-3">
-              <Button onClick={() => void handleNext()}>
+          <DuelStage key={`result-${view.question.id}`}>
+            <ResultView question={view.question} />
+            <VsBadge />
+            <span className="absolute top-4 left-1/2 z-10 -translate-x-1/2 rounded-full border border-border/50 bg-background/80 px-3 py-1 text-xs font-medium text-muted-foreground shadow-lg backdrop-blur tabular-nums">
+              {view.question.total_votes.toLocaleString()} votos en total
+            </span>
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex justify-center pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+              <Button
+                size="lg"
+                onClick={() => void handleNext()}
+                className="pointer-events-auto rounded-full shadow-xl"
+              >
                 <RefreshCw className="size-4" />
                 Siguiente pregunta
               </Button>
-            </CardFooter>
-          </Card>
+            </div>
+          </DuelStage>
         )}
 
         {view.kind === "finished" && (
-          <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
-            <Card className="max-h-full w-full border-border/50 shadow-lg">
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4">
+            <Card className="w-full max-w-md border-border/50 shadow-lg">
               <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
                 <span className="flex size-20 items-center justify-center rounded-full bg-amber-500/10 text-amber-400">
                   <Trophy className="size-10" />
@@ -215,20 +179,51 @@ export function HomeView() {
         )}
 
         {view.kind === "error" && (
-          <Card className="border-border/50 shadow-lg">
-            <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-              <p className="text-lg font-semibold">Algo salió mal</p>
-              <p className="text-sm text-muted-foreground">{view.message}</p>
-              <Button onClick={() => void handleNext()}>Reintentar</Button>
-            </CardContent>
-          </Card>
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4">
+            <Card className="w-full max-w-md border-border/50 shadow-lg">
+              <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+                <p className="text-lg font-semibold">Algo salió mal</p>
+                <p className="text-sm text-muted-foreground">{view.message}</p>
+                <Button onClick={() => void handleNext()}>Reintentar</Button>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </AppLayout>
   )
 }
 
-function ChoiceCard({
+/** Grid a pantalla dividida: 2 filas en móvil, 2 columnas en desktop. */
+function DuelStage({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="animate-rise relative grid min-h-0 flex-1 grid-rows-2 pb-[env(safe-area-inset-bottom)] md:grid-cols-2 md:grid-rows-1">
+      {children}
+    </div>
+  )
+}
+
+function VsBadge() {
+  return (
+    <span className="pointer-events-none absolute top-1/2 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
+      <span className="absolute inset-0 animate-ping rounded-full bg-foreground/15 [animation-duration:2.5s]" />
+      <span className="relative flex size-12 items-center justify-center rounded-full border-2 border-background bg-foreground text-sm font-black tracking-wide text-background shadow-2xl sm:size-14 sm:text-base">
+        VS
+      </span>
+    </span>
+  )
+}
+
+function DuelSkeleton() {
+  return (
+    <div className="grid min-h-0 flex-1 grid-rows-2 md:grid-cols-2 md:grid-rows-1">
+      <Skeleton className="rounded-none" />
+      <Skeleton className="rounded-none" />
+    </div>
+  )
+}
+
+function ChoicePanel({
   choice,
   text,
   image,
@@ -241,62 +236,62 @@ function ChoiceCard({
   disabled?: boolean
   onClick: () => void
 }) {
-  const isA = choice === "A"
+  const accent = choiceAccent(choice)
+
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "group relative flex w-full flex-col overflow-hidden rounded-2xl border bg-card text-left transition-all duration-200",
-        isA
-          ? "border-sky-500/25 hover:border-sky-500/70 hover:shadow-[0_8px_40px_-12px_rgba(56,189,248,0.35)]"
-          : "border-rose-500/25 hover:border-rose-500/70 hover:shadow-[0_8px_40px_-12px_rgba(244,63,94,0.35)]",
-        disabled && "cursor-wait opacity-70"
+        "group relative min-h-0 overflow-hidden text-left outline-none",
+        disabled && "cursor-wait"
       )}
     >
-      <div className="relative h-25 w-full shrink-0 overflow-hidden sm:h-36 md:h-56 lg:h-100">
-        {image ? (
-          <img
-            src={image}
-            alt={text}
-            loading="lazy"
-            className="size-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div
-            className={cn(
-              "flex size-full items-center justify-center transition-transform duration-500 group-hover:scale-105",
-              isA
-                ? "bg-gradient-to-br from-sky-500/25 via-sky-500/10 to-transparent"
-                : "bg-gradient-to-br from-rose-500/25 via-rose-500/10 to-transparent"
-            )}
-          >
-            <ImageIcon className="size-8 text-muted-foreground/40 sm:size-10" />
-          </div>
+      <DuelMedia
+        image={image}
+        alt={text}
+        choice={choice}
+        className="transition-transform duration-700 ease-out group-hover:scale-105"
+      />
+
+      {/* Tinte de color al hacer hover */}
+      <div
+        className={cn(
+          "absolute inset-0 transition-colors duration-300",
+          accent.washHover
         )}
+      />
+
+      {/* Borde de foco/hover */}
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0 border-4 border-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100",
+          accent.borderHover
+        )}
+      />
+
+      <ChoiceBadge
+        choice={choice}
+        className="absolute top-4 left-4 transition-transform duration-300 group-hover:scale-110"
+      />
+
+      {/* Texto en overlay inferior */}
+      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 bg-gradient-to-t from-black/85 via-black/50 to-transparent p-4 pt-16 sm:p-6 sm:pt-20 md:p-8 md:pt-24">
         <span
           className={cn(
-            "absolute top-3 left-3 flex size-7 items-center justify-center rounded-lg text-sm font-extrabold text-white shadow-lg transition-transform duration-200 group-hover:scale-110 sm:size-11 sm:text-lg",
-            isA ? "bg-sky-500" : "bg-rose-500"
+            "text-xs font-bold tracking-widest uppercase",
+            accent.textSoft
           )}
         >
-          {choice}
+          Opción {choice}
         </span>
-      </div>
-      <div className="flex flex-1 items-center justify-between gap-3 p-4 sm:p-5">
-        <span className="line-clamp-2 text-sm leading-snug font-semibold text-balance md:text-lg">
+        <span className="line-clamp-3 text-xl leading-tight font-extrabold text-balance text-white sm:text-2xl md:text-3xl">
           {text}
         </span>
-        <span
-          className={cn(
-            "flex size-7 shrink-0 items-center justify-center rounded-full border transition-all duration-200 group-hover:translate-x-1 sm:size-8",
-            isA
-              ? "border-sky-500/30 text-sky-400 group-hover:bg-sky-500 group-hover:text-white"
-              : "border-rose-500/30 text-rose-400 group-hover:bg-rose-500 group-hover:text-white"
-          )}
-        >
-          <ArrowRight className="size-4" />
+        <span className="mt-1 flex items-center gap-1.5 text-xs font-medium text-white/60 transition-colors duration-300 group-hover:text-white sm:text-sm">
+          Toca para elegir
+          <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
         </span>
       </div>
     </button>
