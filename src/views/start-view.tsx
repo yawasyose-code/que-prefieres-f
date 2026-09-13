@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom"
 import { ArrowRight, Zap } from "lucide-react"
 
+import { ShareButton } from "@/components/share-button"
 import { buttonVariants } from "@/components/ui/button"
 
 export function StartView() {
@@ -52,12 +53,16 @@ export function StartView() {
               Comenzar a jugar
               <ArrowRight className="size-5" />
             </Link>
-            <Link
-              to="/historial"
-              className="text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
-            >
-              Ver mi historial
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link
+                to="/historial"
+                className="text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+              >
+                Ver mi historial
+              </Link>
+              <span aria-hidden className="h-4 w-px bg-border" />
+              <ShareButton />
+            </div>
           </div>
         </div>
       </main>
