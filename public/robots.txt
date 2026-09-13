@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /historial
+
+Sitemap: https://que-prefieres-f.onrender.com/sitemap.xml
