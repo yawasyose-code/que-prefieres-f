@@ -255,7 +255,7 @@ function ChoiceCard({
         disabled && "cursor-wait opacity-70"
       )}
     >
-      <div className="relative h-24 w-full shrink-0 overflow-hidden sm:h-36 md:h-56 lg:h-100">
+      <div className="relative h-25 w-full shrink-0 overflow-hidden sm:h-36 md:h-56 lg:h-100">
         {image ? (
           <img
             src={image}
